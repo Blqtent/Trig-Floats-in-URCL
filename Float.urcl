@@ -1,0 +1,81 @@
+BITS 16
+MINREG 16
+MINHEAP 32768
+MINSTACK 8192
+
+//I'm assuming this is 2s complement
+@define MIN_EXP 200
+@define Max_EXP 1FF
+@define allocs 0
+@define temp 0
+
+.Float_init:
+	xor r1 r1
+	xor r2 r2
+	xor r3 r3
+	xor r4 r4
+	
+.FloatPtrTable //for addressing floats
+	dw 0
+
+.NewFloat //Creates new float & returns the pointer to r1
+	imm r1 3
+	cal .malloc
+	lstr r1 0 0 //msw
+	lstr r1 1 0 //lsw
+	lstr r1 2 MIN_EXP //min_exp
+	lstr allocs .FloatPtrTable r1
+	inc allocs allocs
+	ret
+	
+.dispose //Float alloc # in r1; do `llod r1 .FloatPtrTable x` in which
+	//x is  the alloc #
+	cal .free
+	dec allocs allocs
+	
+	.dispose_loop1
+		llod r2 .FloatsPtrTable temp
+		bre .dispose_loop2 r2 r1
+		inc temp temp
+		jmp .dispose_loop1
+		
+	.dispose_loop2
+		xor r3 r3
+		str r2 r3
+		jmp .dispose_loop3
+	.dispose_loop3
+		inc temp temp
+		lod r3 temp
+		dec temp temp
+		str temp r3
+		lod temp temp
+		brz .dispose_end temp
+		jmp .dispose_loop3
+	.dispose_end
+		ret
+
+//Utility Functions
+._msw: //r1 = index of float
+	llod r1 .FloatPtrTable r1
+	llod r1 r1 0
+	mov r2 r1
+	cpy r1 r2
+	ret
+	
+._lsw: //r1 = index of float
+	llod r1 .FloatPtrTable r1
+	llod r1 r1 1
+	mov r2 r1
+	cpy r1 r2
+	ret
+	
+._exp: //r1 = index of float
+	llod r1 .FloatPtrTable r1
+	llod r1 r1 2
+	mov r2 r1
+	cpy r1 r2
+	ret
+	
+._setConst //r1 = manth r2 = manthl r3 = e //r4 = index of float
+	llod r4 .FloatPtrTable r4
+	lstr r4 
