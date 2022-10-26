@@ -3,11 +3,18 @@ MINREG 16
 MINHEAP 32768
 MINSTACK 8192
 
-//I'm assuming this is 2s complement
-@define MIN_EXP 200
-@define Max_EXP 1FF
+//Float 
+//48 bit float format
+//SSSSSSSSSSSSSSSS: Sign(+/-)
+//EEEEEEEEEEEEEEEE: Exponent(-32767 - 32768)
+//MMMMMMMMMMMMMMMM: Mantissa(-32767 - 32768)
+//float = SM*BASE^E 
+//floats are basically scientific notation
+
 @define allocs 0
 @define temp 0
+@define BASE 10 //base 10
+@define _BASE 2 //unused, but if base 2
 
 .Float_init:
 	xor r1 r1
@@ -21,9 +28,9 @@ MINSTACK 8192
 .NewFloat //Creates new float & returns the pointer to r1
 	imm r1 3
 	cal .malloc
-	lstr r1 0 0 //msw
-	lstr r1 1 0 //lsw
-	lstr r1 2 MIN_EXP //min_exp
+	lstr r1 0 0 //sign(s)
+	lstr r1 1 0 //Exponent
+	lstr r1 2 0 //mantissa
 	lstr allocs .FloatPtrTable r1
 	inc allocs allocs
 	ret
@@ -54,28 +61,43 @@ MINSTACK 8192
 	.dispose_end
 		ret
 
+
+.set //r4 = index of float; sets the value of this float from another float
+	llod r4 .FloatPtrTable r4
+	llod r1 r4 0
+	llod r2 r4 1 
+	llod r3 r4 2
+	cal ._setConst
+	ret
+
 //Utility Functions
-._msw: //r1 = index of float
+._exp: //r1 = index of float; gets the exponent
 	llod r1 .FloatPtrTable r1
 	llod r1 r1 0
 	mov r2 r1
 	cpy r1 r2
 	ret
 	
-._lsw: //r1 = index of float
+._man: //r1 = index of float; gets mantissa
 	llod r1 .FloatPtrTable r1
 	llod r1 r1 1
 	mov r2 r1
 	cpy r1 r2
 	ret
 	
-._exp: //r1 = index of float
+._sign: //r1 = index of float; gets sign of float, either 0x0000 or 0xffff
 	llod r1 .FloatPtrTable r1
 	llod r1 r1 2
 	mov r2 r1
 	cpy r1 r2
 	ret
 	
-._setConst //r1 = manth r2 = manthl r3 = e //r4 = index of float
+._setConst //r1 = manth r2 = exp r3 = s //r4 = index of float
 	llod r4 .FloatPtrTable r4
-	lstr r4 
+	lstr r4 0 r1
+	lstr r4 1 r2
+	lstr r4 2 r3
+	ret
+
+
+	
